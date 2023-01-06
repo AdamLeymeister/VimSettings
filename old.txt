@@ -1,0 +1,231 @@
+ import React, { useState, useEffect, Suspense } from "react";
+import { Routes, Route } from "react-router-dom";
+import routes from "../services/RouteService";
+import "./App.css";
+
+
+function App() {
+  const [currentUser, setUserData] = useState({
+    firstName: "Guest",
+    lastName: "Test",
+    roles: [""],
+    isConfirmed: false,
+    email: "",
+    avatarUrl: "",
+  });
+
+  const updateCurrentUser = (userData) => {
+    setUserData((prevState) => {
+      const loggedInUser = { ...prevState };
+      loggedInUser.firstName = userData.firstName;
+      loggedInUser.lastName = userData.lastName;
+      loggedInUser.isConfirmed = userData.isConfirmed;
+      loggedInUser.roles = ["User"];
+      loggedInUser.avatarUrl = userData.avatarUrl;
+      loggedInUser.email = userData.email;
+      return loggedInUser;
+    });
+  };
+
+  const [filteredRoutes, setFilteredRoutes] = useState([]);
+
+  useEffect(() => {
+    usersService
+      .getCurrentUser()
+      .then(onGetCurrentSuccess)
+      .catch(onGetCurrentError);
+  }, []);
+
+  useEffect(() => {
+    if (currentUser && currentUser.roles.length > 0) {
+      setFilteredRoutes((prevState) => {
+        let filteredRoutes = { ...prevState };
+        filteredRoutes = routes.filter((route) =>
+          route.roles.some((routeRole) => currentUser.roles.includes(routeRole))
+        );
+        return filteredRoutes;
+      });
+    }
+  }, [currentUser]);
+
+  const onGetCurrentSuccess = (response) => {
+    _logger("onGetCurrentSuccessApp", response);
+    usersService
+      .getUserById(response)
+      .then(onGetUserByIdSuccess)
+      .catch(onGetUserByIdError);
+  };
+
+  const onGetCurrentError = (error) => {
+    console.warn(error);
+  };
+
+  const onGetUserByIdSuccess = (response) => {
+    _logger("onGetUserByIdSuccessApp", response);
+    updateCurrentUser(response);
+  };
+
+  const onGetUserByIdError = (error) => {
+    _logger("onGetUserByIdError", error);
+  };
+
+  return (
+    <React.Fragment>
+      <SiteNav user={currentUser} />
+      <Suspense fallback={<div>Loading...</div>}>
+        <Routes>
+          {filteredRoutes.map((route) => (
+            <Route
+              path={route.path}
+              exact
+              roles={route.roles}
+              element={<route.element />}
+              key={Math.random() * 10000}
+            />
+          ))}
+          <Route
+            path="/"
+            element={<Home user={currentUser} updateUser={updateCurrentUser} />}
+          />
+          <Route
+            path="/login"
+            element={
+              <Login user={currentUser} updateUser={updateCurrentUser} />
+            }
+          />
+        </Routes>
+      </Suspense>
+      <Footer />
+    </React.Fragment>
+  );
+}
+
+export default App;
+
+
+
+import { lazy } from "react";
+
+// const userRoles = ["User"];
+const routes = [
+  // {
+  //   path: "/",
+  //   exact: true,
+  //   roles: ["User"], //the roles that this route can be seen by
+  //   isAnonymous: false,
+  //   element: lazy(() => import("../../src/components/Home")),
+  // },
+  // {
+  //   path: "/SiteNav",
+  //   exact: true,
+  //   roles: [], //the roles that this route can be seen by
+  //   isAnonymous: true,
+  //   element: lazy(() => import("../../src/components/SiteNav")),
+  // },
+  {
+    pathname: "/login",
+    exact: true,
+    roles: [""], //the roles that this route can be seen by
+    isAnonymous: true,
+    element: lazy(() => import("../../src/components/user/Login")),
+  },
+  {
+    path: "/register",
+    exact: true,
+    roles: [""], //the roles that this route can be seen by
+    isAnonymous: true,
+    element: lazy(() => import("../../src/components/user/Register")),
+  },
+  {
+    path: "/testAndAjax",
+    exact: true,
+    roles: ["Admin"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() => import("../../src/components/TestAndAjax")),
+  },
+  {
+    path: "/friends",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() => import("../../src/components/friends/Friends")),
+  },
+  {
+    path: "/friends/addfriend",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() => import("../../src/components/friends/AddFriend")),
+  },
+  {
+    path: "/friends/:friendId",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() => import("../../src/components/friends/AddFriend")),
+  },
+  {
+    path: "/jobs",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() => import("../../src/components/jobs/Jobs")),
+  },
+  {
+    path: "/jobs/*",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() => import("../../src/components/jobs/AddJob")),
+  },
+  {
+    path: "/jobs:jobId",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() => import("../../src/components/jobs/AddJob")),
+  },
+  {
+    path: "/techcompanies",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() => import("../../src/components/techcompanies/Companies")),
+  },
+  {
+    path: "/techcompanies/addCompany",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() =>
+      import("../../src/components/techcompanies/AddCompany")
+    ),
+  },
+  {
+    path: "/techcompanies/*",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() =>
+      import("../../src/components/techcompanies/AddCompany")
+    ),
+  },
+  {
+    path: "/techcompanies",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() =>
+      import("../../src/components/techcompanies/CompanyCard")
+    ),
+  },
+  {
+    path: "/events",
+    exact: true,
+    roles: ["Admin", "User"], //the roles that this route can be seen by
+    isAnonymous: false,
+    element: lazy(() => import("../../src/components/events/Events")),
+  },
+];
+
+export default routes;
